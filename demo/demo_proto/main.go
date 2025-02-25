@@ -1,6 +1,8 @@
 package main
 
 import (
+	"github.com/cloudwego/biz-demo/gomall/demo/demo_proto/biz/dal"
+	"github.com/joho/godotenv"
 	consul "github.com/kitex-contrib/registry-consul"
 	"log"
 	"net"
@@ -17,11 +19,16 @@ import (
 )
 
 func main() {
+	err := godotenv.Load()
+	if err != nil {
+		panic(err)
+	}
+	dal.Init()
 	opts := kitexInit()
 
 	svr := echoservice.NewServer(new(EchoServiceImpl), opts...)
 
-	err := svr.Run()
+	err = svr.Run()
 	if err != nil {
 		klog.Error(err.Error())
 	}
