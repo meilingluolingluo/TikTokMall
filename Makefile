@@ -5,3 +5,17 @@ gen-demo-proto:
 .PHONY: gen-demo-thrift
 gen-demo-thrift:
 	@cd demo/demo-thrift &&cwgo server --type RPC --module gomall --service demo_thrift --idl ../../idl/echo.thrift
+
+.PHONY: demo-link-fix
+demo-link-fix:
+	@cd demo/demo-proto && ln -sf ../../idl/echo.proto .
+	@cd demo/demo-thrift && ln -sf ../../idl/echo.thrift .
+
+.PHONY: demo-clean
+demo-clean:
+	@cd demo/demo-proto && rm -rf echo.proto
+	@cd demo/demo-thrift && rm -rf echo.thrift
+
+.PHONY: gen-frontend
+gen-frontend:
+	cwgo server --type HTTP --idl ../../idl/frontend/home.proto --service frontend -module github.com/cloudwego/biz-demo/gomall/app/frontend -I ../../idl
