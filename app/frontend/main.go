@@ -4,9 +4,19 @@ package main
 
 import (
 	"context"
+	"log"
+	"net/http"
+	"os"
 	"time"
 
 	"github.com/cloudwego/biz-demo/gomall/app/frontend/biz/router"
+	"github.com/cloudwego/biz-demo/gomall/app/frontend/middleware"
+
+	"github.com/joho/godotenv"
+
+	"github.com/hertz-contrib/sessions"
+	"github.com/hertz-contrib/sessions/redis"
+
 	"github.com/cloudwego/biz-demo/gomall/app/frontend/conf"
 	"github.com/cloudwego/hertz/pkg/app"
 	"github.com/cloudwego/hertz/pkg/app/middlewares/server/recovery"
@@ -26,24 +36,42 @@ import (
 func main() {
 	// init dal
 	// dal.Init()
+	hlog.SetLevel(hlog.LevelDebug)
+	_ = godotenv.Load()
 	address := conf.GetConf().Hertz.Address
 	h := server.New(server.WithHostPorts(address))
-
+	//日志
+	h.Use(recovery.Recovery(recovery.WithRecoveryHandler(
+		func(ctx context.Context, c *app.RequestContext, err interface{}, stack []byte) {
+			log.Printf("Panic recovered: %v\nStack: %s", err, stack)
+			c.JSON(http.StatusInternalServerError, utils.H{"error": "Internal Server Error"})
+		},
+	)))
 	registerMiddleware(h)
 
 	// add a ping route to test
 	h.GET("/ping", func(c context.Context, ctx *app.RequestContext) {
 		ctx.JSON(consts.StatusOK, utils.H{"ping": "pong"})
 	})
-
 	router.GeneratedRegister(h)
 	h.LoadHTMLGlob("template/*")
 	h.Static("/static", "./")
+
+	h.GET("/sign-in", func(c context.Context, ctx *app.RequestContext) {
+		ctx.HTML(consts.StatusOK, "sign-in", utils.H{"Title": "Sign In"})
+	})
+
+	h.GET("/sign-up", func(c context.Context, ctx *app.RequestContext) {
+		ctx.HTML(consts.StatusOK, "sign-up", utils.H{"Title": "Sign Up"})
+	})
+
 	h.Spin()
 }
 
 func registerMiddleware(h *server.Hertz) {
 	// log
+	store, _ := redis.NewStore(10, "tcp", conf.GetConf().Redis.Address, "", []byte(os.Getenv("SESSION_SECRET")))
+	h.Use(sessions.New("cloudwego-shop", store))
 	logger := hertzlogrus.NewLogger()
 	hlog.SetLogger(logger)
 	hlog.SetLevel(conf.LogLevel())
@@ -81,4 +109,5 @@ func registerMiddleware(h *server.Hertz) {
 
 	// cores
 	h.Use(cors.Default())
+	middleware.RegisterMiddleware(h)
 }
