@@ -1,4 +1,3 @@
-// idl/hello/hello.proto
 syntax = "proto3";
 
 package frontend.home;
@@ -6,12 +5,11 @@ package frontend.home;
 option go_package = "frontend/home";
 
 import "api.proto";
-
-message Empty {}
+import "frontend/common.proto";
 //定义了一个名为 HelloService 的gRPC服务
-service HelloService {
-  //定义了一个RPC方法 Method1，该方法接受一个 Empty 类型的请求，并返回一个 Empty 类型的响应
-  rpc Method1(Empty) returns(Empty) {
+service HomeService {
+  //定义了一个RPC方法，该方法接受一个 Empty 类型的请求，并返回一个 Empty 类型的响应
+  rpc Home(common.Empty) returns(common.Empty) {
     //一个自定义选项，通常用于指定HTTP路由或其他元数据
     option (api.get) = "/";
   }
