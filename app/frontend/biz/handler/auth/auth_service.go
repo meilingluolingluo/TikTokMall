@@ -24,13 +24,13 @@ func Login(ctx context.Context, c *app.RequestContext) {
 		return
 	}
 
-	resp, err := service.NewLoginService(ctx, c).Run(&req)
+	redirect, err := service.NewLoginService(ctx, c).Run(&req)
 	if err != nil {
 		utils.SendErrResponse(ctx, c, consts.StatusOK, err)
 		return
 	}
-	fmt.Println(resp)
-	c.Redirect(consts.StatusFound, []byte(resp))
+	fmt.Println(redirect)
+	c.Redirect(consts.StatusFound, []byte(redirect))
 }
 
 // Register .
@@ -70,7 +70,6 @@ func Logout(ctx context.Context, c *app.RequestContext) {
 		utils.SendErrResponse(ctx, c, consts.StatusOK, err)
 		return
 	}
-	redirect := "/"
 
-	c.Redirect(consts.StatusFound, []byte(redirect))
+	c.Redirect(consts.StatusFound, []byte("/"))
 }

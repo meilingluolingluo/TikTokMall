@@ -9,6 +9,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/cloudwego/biz-demo/gomall/app/frontend/infra/rpc"
+
 	"github.com/cloudwego/biz-demo/gomall/app/frontend/biz/router"
 	"github.com/cloudwego/biz-demo/gomall/app/frontend/middleware"
 
@@ -36,6 +38,7 @@ import (
 func main() {
 	// init dal
 	// dal.Init()
+	rpc.Init()
 	hlog.SetLevel(hlog.LevelDebug)
 	_ = godotenv.Load()
 	address := conf.GetConf().Hertz.Address
@@ -53,18 +56,26 @@ func main() {
 	h.GET("/ping", func(c context.Context, ctx *app.RequestContext) {
 		ctx.JSON(consts.StatusOK, utils.H{"ping": "pong"})
 	})
+
 	router.GeneratedRegister(h)
 	h.LoadHTMLGlob("template/*")
 	h.Static("/static", "./")
 
+	h.GET("/about", middleware.Auth(), func(c context.Context, ctx *app.RequestContext) {
+		ctx.HTML(http.StatusOK, "about", utils.H{"Title": "About"})
+	})
+
 	h.GET("/sign-in", func(c context.Context, ctx *app.RequestContext) {
-		ctx.HTML(consts.StatusOK, "sign-in", utils.H{"Title": "Sign In"})
+		data := utils.H{
+			"Title": "Sign In",
+			"Next":  ctx.Query("next"),
+		}
+		ctx.HTML(consts.StatusOK, "sign-in", data)
 	})
 
 	h.GET("/sign-up", func(c context.Context, ctx *app.RequestContext) {
 		ctx.HTML(consts.StatusOK, "sign-up", utils.H{"Title": "Sign Up"})
 	})
-
 	h.Spin()
 }
 

@@ -2,11 +2,12 @@ package mysql
 
 import (
 	"fmt"
-	"github.com/cloudwego/biz-demo/gomall/demo/demo_proto/biz/model"
-	"github.com/cloudwego/biz-demo/gomall/demo/demo_proto/conf"
+	"log"
 	"os"
 
-	"github.com/joho/godotenv"
+	"github.com/cloudwego/biz-demo/gomall/demo/demo_proto/biz/model"
+	"github.com/cloudwego/biz-demo/gomall/demo/demo_proto/conf"
+
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 )
@@ -16,19 +17,25 @@ var (
 	err error
 )
 
-func Init() {
-	// 添加: 加载 .env 文件
-	if err := godotenv.Load(); err != nil {
-		panic("Error loading .env file")
+// 提取 DSN 生成逻辑到独立函数
+func getDSN() string {
+	mysqlUser := os.Getenv("MYSQL_USER")
+	mysqlPassword := os.Getenv("MYSQL_PASSWORD")
+	mysqlHost := os.Getenv("MYSQL_HOST")
+	mysqlDatabase := os.Getenv("MYSQL_DATABASE")
+
+	if mysqlUser == "" || mysqlPassword == "" || mysqlHost == "" || mysqlDatabase == "" {
+		panic("missing required environment variables: MYSQL_USER, MYSQL_PASSWORD, MYSQL_HOST, or MYSQL_DATABASE")
 	}
 
-	dsn := fmt.Sprintf(conf.GetConf().MySQL.DSN,
-		os.Getenv("MYSQL_USER"),
-		os.Getenv("MYSQL_PASSWORD"),
-		os.Getenv("MYSQL_HOST"),
-		os.Getenv("MYSQL_DATABASE"),
-	)
+	return fmt.Sprintf(conf.GetConf().MySQL.DSN,
+		mysqlUser, mysqlPassword, mysqlHost, mysqlDatabase)
+}
 
+// Init 开启数据库连接
+func Init() error {
+	dsn := getDSN()
+	var err error
 	DB, err = gorm.Open(mysql.Open(dsn),
 		&gorm.Config{
 			PrepareStmt:            true,
@@ -36,21 +43,14 @@ func Init() {
 		},
 	)
 	if err != nil {
-		panic(err)
+		return fmt.Errorf("failed to initialize database: %v", err)
 	}
 
-	type Version struct {
-		Version string
+	// 自动迁移数据库
+	if err := DB.AutoMigrate(&model.User{}); err != nil {
+		return fmt.Errorf("failed to auto migrate database: %v", err)
 	}
-	var v Version
-	err = DB.Raw("select version() as version").Scan(&v).Error
-	if err != nil {
-		panic(err)
-	}
-	// 自动创建表
-	err = DB.AutoMigrate(&model.User{})
-	if err != nil {
-		panic("failed to migrate database: " + err.Error())
-	}
-	fmt.Printf("%#v\n", DB.Debug().Exec("select version() as version"))
+
+	log.Printf("Database initialized successfully with DSN: %s", dsn)
+	return nil
 }

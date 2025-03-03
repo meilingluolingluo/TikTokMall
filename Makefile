@@ -19,3 +19,11 @@ demo-clean:
 .PHONY: gen-frontend
 gen-frontend:
 	@cd app/frontend && cwgo server --type HTTP --idl ../../idl/frontend/auth_page.proto --service frontend --module github.com/cloudwego/biz-demo/gomall/app/frontend -I ../../idl
+
+.PHONY: gen-rpc
+gen-rpc:
+	@cd app/rpc && cwgo client --type RPC --service user --module github.com/cloudwego/biz-demo/gomall/rpc_gen --I ../idl --idl ../idl/user.proto
+
+.PHONY:gen-user
+gen-user:
+	@cd app/user && cwgo server --type RPC --service user --module github.com/cloudwego/biz-demo/gomall/app/user --pass "-use github.com/cloudwego/biz-demo/gomall/app/user" --I ../../idl --idl ../idl/user.proto

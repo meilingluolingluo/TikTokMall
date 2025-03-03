@@ -3,6 +3,7 @@ package middleware
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/cloudwego/biz-demo/gomall/app/frontend/utils"
 	"github.com/cloudwego/hertz/pkg/app"
@@ -27,17 +28,13 @@ func Auth() app.HandlerFunc {
 		session := sessions.Default(c)
 		userId := session.Get("user_id")
 		if userId == nil {
-			byteRef := c.GetHeader("Referer")
-			ref := string(byteRef)
+			ref := string(c.GetHeader("Referer"))
 			next := "/sign-in"
-			if ref != "" {
-				if utils.ValidateNext(ref) {
-					next = fmt.Sprintf("%s?next=%s", next, ref)
-				}
+			if ref != "" && utils.ValidateNext(ref) {
+				next = fmt.Sprintf("/sign-in?next=%s", ref)
 			}
-			c.Redirect(302, []byte(next))
+			c.Redirect(http.StatusFound, []byte(next)) // 使用 http.StatusFound (302)
 			c.Abort()
-			c.Next(ctx)
 			return
 		}
 		ctx = context.WithValue(ctx, utils.UserIdKey, userId)
